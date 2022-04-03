@@ -24,7 +24,12 @@ var User = new Schema({
       default: false
 
     },
-    lessons: []
+    lessons: [
+      {
+             type: mongoose.Schema.Types.ObjectId,
+             ref: 'Lesson'
+    }
+  ]
 });
 
 User.plugin(passportLocalMongoose);
