@@ -5,14 +5,14 @@ var User = require('../models/user')
 const authenticate = require('../authenticate');
 
 router.route('/')
-.get((req, res, next) => {
+.get(authenticate.verifyUser, (req, res, next) => {
     Lesson.find({})
     .then((lesson) => {
         res.statusCode = 200;
         res.setHeader("Content-type", "application/json");
         res.json(lesson);
     }, (err) => next(err)).catch((err) => next(err))
-}).post((req, res, next) => {
+}).post(authenticate.verifyUser, authenticate.verifyManager,(req, res, next) => {
     Lesson.create({"name": req.body.name, "quota": req.body.quota})
     .then((lesson) => {
         console.log('lesson created');
@@ -20,26 +20,26 @@ router.route('/')
         res.setHeader("Content-type", "application/json");
         res.json(lesson)
     }, (err) => next(err)).catch((err) => next(err))
-}).put((req, res, next) => {
+}).put(authenticate.verifyUser, authenticate.verifyManager,(req, res, next) => {
     res.statusCode = 403;
     res.end("PUT operation is not supported on /lessons")
-}).delete((req, res, next) => {
+}).delete(authenticate.verifyUser, authenticate.verifyManager,(req, res, next) => {
     res.statusCode = 403;
     res.end("DELETE operation is not supported on /lessons")
 })
 
 router.route('/:lesson')
-.get((req, res, next) => {
+.get(authenticate.verifyUser, (req, res, next) => {
     Lesson.find({name: req.params.lesson})
     .then((lesson) => {
         res.statusCode = 200;
         res.setHeader("Content-type", "application/json");
         res.json(lesson);
     }, (err) => next(err)).catch((err) => next(err))
-}).post((req, res, next) => {
+}).post(authenticate.verifyUser, authenticate.verifyManager,(req, res, next) => {
     res.statusCode = 403;
     res.end("POST operation is not supported on /lessons/"+req.params.lesson)
-}).put( async (req, res, next) => {
+}).put( authenticate.verifyUser, authenticate.verifyManager, async (req, res, next) => {
     var lesson = await Lesson.findOne({name: req.params.lesson});
     lesson.quota = req.body.quota;
     lesson.save()
@@ -49,7 +49,7 @@ router.route('/:lesson')
         res.setHeader("Content-type", "application/json");
         res.json(lesson)
     }, (err) => next(err)).catch((err) => next(err))
-}).delete((req, res, next) => {
+}).delete(authenticate.verifyUser, authenticate.verifyManager,(req, res, next) => {
     Lesson.findOneAndRemove({name: req.params.lesson})
     .then((reply) => {
         console.log('lesson deleted');
@@ -59,7 +59,7 @@ router.route('/:lesson')
 })
 
 router.route('/apply/:lesson')
-.get((req, res, next) => {
+.get(authenticate.verifyUser, (req, res, next) => {
     res.statusCode = 403;
     res.end("GET operation is not supported on /lessons/apply/"+req.params.lesson);
 }).post(authenticate.verifyUser, async (req, res, next) => {
@@ -87,7 +87,7 @@ router.route('/apply/:lesson')
         err.status = 404;
         return next(err) 
     }
-}).put((req, res, next) => {
+}).put(authenticate.verifyUser, (req, res, next) => {
     res.statusCode = 403;
     res.end("PUT operation is not supported on /lessons/apply/"+req.params.lesson);
 }).delete(authenticate.verifyUser ,async (req, res, next) => {
@@ -112,7 +112,9 @@ router.route('/apply/:lesson')
         res.setHeader("Content-type", "application/json");
         res.json({success: true})
     }catch{
-
+        err = new Error("something went wrong");
+        err.status = 404;
+        return next(err)
     }
 })
 
